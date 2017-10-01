@@ -1,0 +1,25 @@
+dat -a -t FONT hl.dat fonts/Letter_Gothic_Std_12.pcx
+dat -a -t FONT hl.dat fonts/Letter_Gothic_Std_24.pcx
+dat -a -t FONT hl.dat fonts/Letter_Gothic_Std_28.pcx
+dat -a -t FONT hl.dat fonts/Letter_Gothic_Std_48.pcx
+dat -a -t FONT hl.dat fonts/Lucida_Calligraphy_36.pcx
+
+dat -a -t BMP hl.dat images/background_1.pcx
+dat -a -t BMP hl.dat images/ending.pcx
+dat -a -t BMP hl.dat images/levels.pcx
+dat -a -t BMP hl.dat images/title.pcx
+dat -a -t BMP hl.dat images/instructions.pcx
+dat -a -t BMP -bpp 24 hl.dat images/help.bmp
+
+dat -a -t BMP -bpp 24 hl.dat sprites/cursor.bmp
+dat -a -t BMP -bpp 24 hl.dat sprites/Sonic.bmp
+dat -a -t BMP -bpp 24 hl.dat sprites/target.bmp
+
+dat -a -t SAMPLE hl.dat sounds/gameover_sfx.wav
+dat -a -t SAMPLE hl.dat sounds/hardline_bgm.wav
+dat -a -t SAMPLE hl.dat sounds/hit_sfx.wav
+dat -a -t SAMPLE hl.dat sounds/levelup_sfx.wav
+dat -a -t SAMPLE hl.dat sounds/pause_sfx.wav
+
+dat -c2 hl.dat
+dat -h defines.h hl.dat

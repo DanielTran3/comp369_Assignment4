@@ -1,0 +1,23 @@
+dat -a -t FONT tothetop.dat fonts/Brush_Script_MT_48.pcx
+dat -a -t FONT tothetop.dat fonts/Chaparral_Pro_Light_12.pcx
+dat -a -t FONT tothetop.dat fonts/Tempus_Sans_ITC_9.pcx
+dat -a -t FONT tothetop.dat fonts/Tempus_Sans_ITC_24.pcx
+dat -a -t FONT tothetop.dat fonts/Tempus_Sans_ITC_48.pcx
+
+dat -a -t BMP -bpp 24 tothetop.dat backgrounds/InstructionsBackground.pcx
+dat -a -t BMP -bpp 24 tothetop.dat backgrounds/TitleBackground.pcx
+dat -a -t BMP -bpp 24 tothetop.dat backgrounds/WinBackground.bmp
+
+dat -a -t BMP -bpp 24 tothetop.dat mappy/player.bmp
+dat -a -t BMP -bpp 24 tothetop.dat mappy/deathSpike.bmp
+dat -a -t BMP -bpp 24 tothetop.dat mappy/enemy.bmp
+dat -a -t BMP -bpp 24 tothetop.dat mappy/moving_platform.bmp
+
+dat -a -t SAMPLE tothetop.dat sounds/BGM_Epic.wav
+dat -a -t SAMPLE tothetop.dat sounds/BGM_Win.wav
+dat -a -t SAMPLE tothetop.dat sounds/SFX_Death.wav
+dat -a -t SAMPLE tothetop.dat sounds/SFX_Jump.wav
+dat -a -t SAMPLE tothetop.dat sounds/SFX_Spikes.wav
+
+dat -c2 tothetop.dat
+dat -h defines.h tothetop.dat
