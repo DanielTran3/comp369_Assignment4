@@ -97,8 +97,6 @@ void EnemyHandler::SpawnEnemies() {
 	int randomLevel = 0;
 	int platformEndingTile = 0;
 	
-	Sprite *enemy = new Sprite();
-	enemy->Load((BITMAP *) _data[ENEMY_BMP].dat);
 	while (spawningLevel > TOP_LEVEL) {
 		// Spawn an enemy randomly between 8 levels
 		spawningLevel -= rand() % 8;

@@ -1,13 +1,81 @@
 #include <allegro.h>
 #include "toTheTop.h"
 
-Sound *toTheTopSounds;
-DATAFILE *data;
-
+int mapxoff, mapyoff;
 int oldSpikesY = BOTTOM;
 volatile int spikesY = BOTTOM;
 volatile int timeElapsed = 0;
 int gameoverFlag = 0;
+bool closeThreads = false;
+pthread_mutex_t threadsafe = PTHREAD_MUTEX_INITIALIZER;
+
+Sprite *spike;
+Sprite *player;
+Platform *cloudPlatforms;
+
+Sound *toTheTopSounds;
+DATAFILE *data;
+
+BITMAP *buffer;
+
+FONT *tempus_sans_itc_48;
+FONT *tempus_sans_itc_24;
+FONT *tempus_sans_itc_9;
+
+/*
+	Thread for blitting mappy foreground and background tiles, moving platforms,, and spikes
+*/
+void *secondaryThreadLoop(void *data) {
+	while(!closeThreads) {
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
+		}
+		//update the map scroll position
+		mapxoff = WIDTH / 2;
+		mapyoff = player->getY() - HEIGHT / 2;
+
+        //avoid moving beyond the map edge
+		if (mapxoff < 0) mapxoff = 0;
+		if (mapxoff > (mapwidth * mapblockwidth - WIDTH))
+            mapxoff = mapwidth * mapblockwidth - WIDTH;
+		if (mapyoff < 0) 
+            mapyoff = 0;
+		if (mapyoff > (mapheight * mapblockheight - HEIGHT)) 
+            mapyoff = mapheight * mapblockheight - HEIGHT;
+        
+		//draw the background tiles
+		MapDrawBG(buffer, mapxoff, mapyoff, 0, 0, WIDTH-1, HEIGHT-1);
+
+        //draw foreground tiles
+		MapDrawFG(buffer, mapxoff, mapyoff, 0, 0, WIDTH-1, HEIGHT-1, 0);
+		
+		// If mapyoff + HEIGHT (Bottom of the screen) > spikesY, then the spikes should be
+		// displayed on the screen.
+		if (mapyoff + HEIGHT > spikesY) {
+			// Display spikes from HEIGHT - (mapyoff + HEIGHT - spikesY) to the bottom of the screen
+			drawHLineOfSprites(spike, buffer, WIDTH, spikesY - mapyoff, toTheTopSounds);
+		}
+		
+		// Draw the platforms if they are in range
+		cloudPlatforms->DrawPlatforms(buffer, mapyoff, mapxoff, mapyoff, player);
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex unlock error", 0, 0, WHITE, 0);
+		}
+		rest(1);
+	}
+}
+
+/*
+	A helper thread for opening the help menu or turning off/on the sound
+*/
+void *soundsAndHelpThread(void *data) {
+	while(!closeThreads) {
+		// Check if the user wants to display the help menu or pause the music
+		helpMenu(tempus_sans_itc_48, tempus_sans_itc_9);
+		toTheTopSounds->PollTurnOnOrOffMusic();
+	}
+}
+
 /*
 	Update the level that the spikes are at
 */
@@ -258,7 +326,7 @@ void drawHLineOfSprites(Sprite *sprite, BITMAP *dest, int xDistance, int yLocati
 void initializePlayer(Sprite *player) {
 	player->Load((BITMAP *) data[PLAYER_BMP].dat);
 	player->setX(WIDTH / 2);
-	player->setY((1499 * mapblockheight) - player->getHeight() - mapblockheight - 1);
+	player->setY((1200 * mapblockheight) - player->getHeight() - mapblockheight - 1);
 	player->setWidth(24);
 	player->setHeight(22);
 	player->setAnimColumns(11);
@@ -308,14 +376,20 @@ bool chooseToContinue() {
 */
 void helpMenu(FONT *helpTitle, FONT *helpFont) {
 	if ((key[KEY_LCONTROL] && key[KEY_H]) ||
-		(key[KEY_RCONTROL] && key[KEY_H])) { 
+		(key[KEY_RCONTROL] && key[KEY_H])) {
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
+		} 
 		displayInstructions(helpTitle, helpFont);
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread muetx unlock error", 0, 0, WHITE, 0);
+		}
 	}
 }
 
 int main(void) {
 	// Initial Variables
-	int mapxoff, mapyoff;
+
 	int spikeTimer = 3000;
 	int spikeYThreshold = 1425;
 	gameoverFlag = 0;
@@ -342,14 +416,14 @@ int main(void) {
 	toTheTopSounds = new Sound(data);
 	
 	// Create double buffer
-	BITMAP *buffer = create_bitmap(WIDTH, HEIGHT);
+	buffer = create_bitmap(WIDTH, HEIGHT);
 	clear(buffer);
 	
 	// Load Mappy Map
 	MapLoad(MAP);
 	
 	// Initialize Spike Sprite
-	Sprite *spike = new Sprite();
+	spike = new Sprite();
 	ret = spike->Load((BITMAP *) data[DEATHSPIKE_BMP].dat);
 	if (ret == 0) {
 		allegro_message("Error loading mappy/deathSpike.bmp");
@@ -361,7 +435,7 @@ int main(void) {
 	spike->setY(spikesY);
 	
 	// Initialize Player
-	Sprite *player = new Sprite();
+	player = new Sprite();
 	initializePlayer(player);
 
 	// Initialize Enemies in a enemyHandler
@@ -369,11 +443,11 @@ int main(void) {
 	enemyHandler->SpawnEnemies();
 
 	// Create the moving cloud platforms to be used in Stage 3
-	Platform *cloudPlatforms = initializeMovingPlatforms();
+	cloudPlatforms = initializeMovingPlatforms();
 	
-	FONT *tempus_sans_itc_48 = (FONT *) data[TEMPUS_SANS_ITC_48_PCX].dat;
-	FONT *tempus_sans_itc_24 = (FONT *) data[TEMPUS_SANS_ITC_24_PCX].dat;
-	FONT *tempus_sans_itc_9 = (FONT *) data[TEMPUS_SANS_ITC_9_PCX].dat;
+	tempus_sans_itc_48 = (FONT *) data[TEMPUS_SANS_ITC_48_PCX].dat;
+	tempus_sans_itc_24 = (FONT *) data[TEMPUS_SANS_ITC_24_PCX].dat;
+	tempus_sans_itc_9 = (FONT *) data[TEMPUS_SANS_ITC_9_PCX].dat;
 	if (!tempus_sans_itc_48 || !tempus_sans_itc_24 || !tempus_sans_itc_9) {
 		allegro_message("Cannot find one or more font files");
 		return 1;
@@ -393,9 +467,19 @@ int main(void) {
 	LOCK_FUNCTION(update_time);
 	install_int(update_time, 1000);
 	
+	pthread_t helperThread;
+	pthread_t secondaryThread;
+	int id;
+	int threadID0 = 0;
+	int threadID1 = 1;
+	
+	id = pthread_create(&secondaryThread, NULL, secondaryThreadLoop, (void *) &threadID0);
+	id = pthread_create(&helperThread, NULL, soundsAndHelpThread, (void *) &threadID1);
+	
 	while(!key[KEY_ESC]) {
-		helpMenu(tempus_sans_itc_48, tempus_sans_itc_9);
-		toTheTopSounds->PollTurnOnOrOffMusic();
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
+		} 
 		player->UpdateLevelReached();
 		player->PlayerControls(toTheTopSounds);
 		
@@ -417,35 +501,6 @@ int main(void) {
 		if (player->GetBlockData1(player->getX(), player->getY()) == 2) {
 			gameoverFlag = -1;
 		}
-		
-		//update the map scroll position
-		mapxoff = WIDTH / 2;
-		mapyoff = player->getY() - HEIGHT / 2;
-
-        //avoid moving beyond the map edge
-		if (mapxoff < 0) mapxoff = 0;
-		if (mapxoff > (mapwidth * mapblockwidth - WIDTH))
-            mapxoff = mapwidth * mapblockwidth - WIDTH;
-		if (mapyoff < 0) 
-            mapyoff = 0;
-		if (mapyoff > (mapheight * mapblockheight - HEIGHT)) 
-            mapyoff = mapheight * mapblockheight - HEIGHT;
-        
-		//draw the background tiles
-		MapDrawBG(buffer, mapxoff, mapyoff, 0, 0, WIDTH-1, HEIGHT-1);
-
-        //draw foreground tiles
-		MapDrawFG(buffer, mapxoff, mapyoff, 0, 0, WIDTH-1, HEIGHT-1, 0);
-		
-		// If mapyoff + HEIGHT (Bottom of the screen) > spikesY, then the spikes should be
-		// displayed on the screen.
-		if (mapyoff + HEIGHT > spikesY) {
-			// Display spikes from HEIGHT - (mapyoff + HEIGHT - spikesY) to the bottom of the screen
-			drawHLineOfSprites(spike, buffer, WIDTH, spikesY - mapyoff, toTheTopSounds);
-		}
-		
-		// Draw the platforms if they are in range
-		cloudPlatforms->DrawPlatforms(buffer, mapyoff, mapxoff, mapyoff, player);
 		
 		// Draws Enemy and checks for player collision with enemy
 		if (enemyHandler->DrawEnemies(buffer, mapyoff, mapxoff, mapyoff, player)) {
@@ -493,7 +548,6 @@ int main(void) {
 				player->setY((1499 * mapblockheight) - player->getHeight() - mapblockheight - 1);
 				
 				// Respawn enemies
-				delete enemyHandler;
 				enemyHandler = new EnemyHandler(data);
 				enemyHandler->SpawnEnemies();
 				
@@ -513,8 +567,12 @@ int main(void) {
 			while(!key[KEY_ESC]);
 			break;
 		}
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex unlock error", 0, 0, WHITE, 0);
+		}
 	}
 	
+	closeThreads = true;
 	// Clean up the game
 	remove_int(update_time);
 	remove_int(update_deathSpikes);

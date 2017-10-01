@@ -2,10 +2,94 @@
 #include "assignment2.h"
 
 bool gameOver;
+bool closeThreads = false;
 int lineLength = 200;
-BITMAP *mascotFrames[MASCOTFRAMES];
+pthread_mutex_t threadsafe = PTHREAD_MUTEX_INITIALIZER;
+
 Sound *hardlineSounds;
 DATAFILE *data;
+PlayerInfo *player;
+
+Sprite *cursor;
+Sprite *target;
+
+BITMAP *buffer;
+BITMAP *background_image;
+BITMAP *mascotFrames[MASCOTFRAMES];
+
+FONT *letter_gothic_48;
+FONT *letter_gothic_28;
+FONT *letter_gothic_24;
+FONT *letter_gothic_12;
+FONT *lucida_calligraphy_36;
+/*
+	Thread for drawing the player's sprite and background the double buffer
+*/
+void* backgroundAndSpritesThreadLoop(void *data) {
+	// Get the thread's ID
+	int threadID = *((int *) data);
+	while (!closeThreads) {
+		
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
+		}
+		// Update the position of the cursor and check the cursors position in respect
+		// to the end of the lines and to the target
+		cursor->UpdatePosition();
+		checkCursorOnBoundary(cursor);
+		checkIfCursorPassesTarget(cursor, target);
+		
+		// Update target position outside of mutex lock for concurrency with other thread function;
+		// Check if the user presses SPACE to hit the target.
+		if (keypressed()) {
+			if(key[KEY_SPACE]) {
+				// Stop the if hitTheTarget function from triggering multiple times
+				// when the space key is pressed.
+				clear_keybuf();
+				// If the player's cursor hits the target, then increrase the player's score
+				// and move the target to a random location
+				if (hitTheTarget(cursor, target)) {
+					player->IncreaseScore(cursor, hardlineSounds);
+					relocateTarget(cursor, target);
+				}
+			}
+		}
+		
+		// Draw the background, to the double buffer
+		blit(background_image, buffer, 0, 0, 0, 0, WIDTH, HEIGHT);
+		
+		// Draw a thick black line that the target is on and the cursor runs across, onto the double buffer
+		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2 - 1, (WIDTH + lineLength) / 2, BLACK);
+		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2, (WIDTH + lineLength) / 2, BLACK);
+		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2 + 1, (WIDTH + lineLength) / 2, BLACK);
+		
+		// Draw the cursor and the buffer onto the double buffer
+		draw_sprite(buffer, target->getImage(), target->getX(), target->getY());
+		
+		draw_sprite(buffer, cursor->getImage(), cursor->getX(), cursor->getY());
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERRR: Thread mutex unlock error", 0, 0, WHITE, 0);
+		}
+		// Slow down the thread a little bit
+		rest(1);
+	}
+	
+	// Terminate the thread
+	pthread_exit(NULL);
+	
+	return NULL;
+}
+
+/*
+	A helper thread for opening the help menu or turning off/on the sound
+*/
+void *soundsAndHelpThread(void *data) {
+	while(!closeThreads) {
+		// Check if the user wants to display the help menu or pause the music
+		helpMenu(lucida_calligraphy_36, letter_gothic_12);
+		hardlineSounds->PollTurnOnOrOffMusic();
+	}
+}
 
 /*
 	Draws a fullscreen image given the filename input. Generally used to display a background image
@@ -13,12 +97,8 @@ DATAFILE *data;
 void drawImage(int datIndex) {
 	BITMAP *image;
 	image = (BITMAP *) data[datIndex].dat;
-//	if (!image) {
-//		allegro_message("Error Loading %s", datIndex);
-//	}
 	
 	blit(image, screen, 0, 0, 0, 0, WIDTH, HEIGHT);
-	//destroy_bitmap(image);
 }
 
 /*
@@ -27,12 +107,8 @@ void drawImage(int datIndex) {
 void drawImage(int datIndex, BITMAP *bitmap) {
 	BITMAP *image;
 	image = (BITMAP *) data[datIndex].dat;
-//	if (!image) {
-//		allegro_message("Error Loading %s", datIndex);
-//	}
 	
 	blit(image, bitmap, 0, 0, 0, 0, WIDTH, HEIGHT);
-	//destroy_bitmap(image);
 }
 
 /*
@@ -154,6 +230,9 @@ void displayDifficultySelectionScreen(FONT *headerFont, FONT *selectionFont, Spr
 		}
 		if (key[KEY_3]) {
 			hard(cursor);
+			break;
+		}
+		if (key[KEY_ENTER]) {
 			break;
 		}
 	}
@@ -473,7 +552,14 @@ void helpMenu(FONT *helpTitle, FONT *helpFont) {
 		(key[KEY_RCONTROL] && key[KEY_H])) { 
 		hardlineSounds->setSoundEffect(PAUSE_SFX_WAV);
 		hardlineSounds->playSoundEffect();
+		
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
+		}
 		displayHelpScreen(helpTitle, helpFont);
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERRR: Thread mutex unlock error", 0, 0, WHITE, 0);
+		}
 	}
 }
 
@@ -499,15 +585,13 @@ int main(void) {
 		return 1;
 	}
 	hardlineSounds = new Sound(data);
-//	SAMPLE *test = (SAMPLE *) data[GAMEOVER_SFX_WAV].dat;
-//	play_sample(test, 128, 128, 1000, false);
 	
 	// Initialize fonts to be used in the game
-	FONT *letter_gothic_48 = (FONT *) data[LETTER_GOTHIC_STD_48_PCX].dat;
-	FONT *letter_gothic_28 = (FONT *) data[LETTER_GOTHIC_STD_28_PCX].dat;
-	FONT *letter_gothic_24 = (FONT *) data[LETTER_GOTHIC_STD_24_PCX].dat;
-	FONT *letter_gothic_12 = (FONT *) data[LETTER_GOTHIC_STD_12_PCX].dat;
-	FONT *lucida_calligraphy_36 = (FONT *) data[LUCIDA_CALLIGRAPHY_36_PCX].dat;
+	letter_gothic_48 = (FONT *) data[LETTER_GOTHIC_STD_48_PCX].dat;
+	letter_gothic_28 = (FONT *) data[LETTER_GOTHIC_STD_28_PCX].dat;
+	letter_gothic_24 = (FONT *) data[LETTER_GOTHIC_STD_24_PCX].dat;
+	letter_gothic_12 = (FONT *) data[LETTER_GOTHIC_STD_12_PCX].dat;
+	lucida_calligraphy_36 = (FONT *) data[LUCIDA_CALLIGRAPHY_36_PCX].dat;
 	if (!letter_gothic_48 || !letter_gothic_24 || !letter_gothic_12 || !lucida_calligraphy_36) {
 		allegro_message("Cannot find one or more font files");
 		return 1;
@@ -519,10 +603,10 @@ int main(void) {
 	displayInstructions();
 	
 	// Initialize player settings, cursor, target, and mascot frames
-	PlayerInfo *player = new PlayerInfo();
+	player = new PlayerInfo();
 	Sprite *mascot = createMascotAnimSprite();
-	Sprite *cursor = new Sprite();
-	Sprite *target = new Sprite();
+	cursor = new Sprite();
+	target = new Sprite();
 	cursor->Load((BITMAP *) data[CURSOR_BMP].dat);
 	target->Load((BITMAP *) data[TARGET_BMP].dat);
 	// Display difficulty screen that allows the user to select their difficulty
@@ -536,57 +620,36 @@ int main(void) {
 	setTargetSides(cursor, target);
 	
 	// Create the double buffer
-	BITMAP *buffer;
 	buffer = create_bitmap(WIDTH, HEIGHT);
 	
 	// Load the background image to be used in the game
-	BITMAP *background_image;
 	background_image = (BITMAP *) data[BACKGROUND_1_PCX].dat;
 	if (!background_image) {
 		allegro_message("Error Loading file number %s from dat file", BACKGROUND_1_PCX);
 	}
 
+	// Initialize and create the threads
+	pthread_t backgroundAndPlayerThread;
+	pthread_t helperThread;
+	int id;
+	int threadID0 = 0;
+	int threadID1 = 1;
+	
+	id = pthread_create(&backgroundAndPlayerThread, NULL, backgroundAndSpritesThreadLoop, (void *)&threadID0);
+	id = pthread_create(&helperThread, NULL, soundsAndHelpThread, (void *)&threadID1);
+	
 	// Game loop.
 	while (!key[KEY_ESC]) {
-		// Check if the user wants to display the help menu or pause the music
-		helpMenu(lucida_calligraphy_36, letter_gothic_12);
-		hardlineSounds->PollTurnOnOrOffMusic();
-		
-		// Update the position of the cursor and check the cursors position in respect
-		// to the end of the lines and to the target
-		cursor->UpdatePosition();
-		checkCursorOnBoundary(cursor);
-		checkIfCursorPassesTarget(cursor, target);
-		
-		// Check if the user presses SPACE to hit the target.
-		if (keypressed()) {
-			if(key[KEY_SPACE]) {
-				// Stop the if hitTheTarget function from triggering multiple times
-				// when the space key is pressed.
-				clear_keybuf();
-				// If the player's cursor hits the target, then increrase the player's score
-				// and move the target to a random location
-				if (hitTheTarget(cursor, target)) {
-					player->IncreaseScore(cursor, hardlineSounds);
-					relocateTarget(cursor, target);
-				}
-			}
+			
+		// Lock the mutex for blitting to the double buffer and displaying the double buffer to the screen
+		if (pthread_mutex_lock(&threadsafe)) {
+			textout_ex(buffer, font, "ERROR: Thread mutex was locked", 0, 0, WHITE, 0);
 		}
-		
-		// Draw the background, to the double buffer
-		blit(background_image, buffer, 0, 0, 0, 0, WIDTH, HEIGHT);
+	
 		// Draw the user's stats
 		displayUserInformation(player, buffer);
 		// If the user has just leveled up, draw the mascot
 		animateMascot(buffer, mascot, player, letter_gothic_24);
-		// Draw a thick black line that the target is on and the cursor runs across, onto the double buffer
-		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2 - 1, (WIDTH + lineLength) / 2, BLACK);
-		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2, (WIDTH + lineLength) / 2, BLACK);
-		hline(buffer, (WIDTH - lineLength) / 2, HEIGHT / 2 + 1, (WIDTH + lineLength) / 2, BLACK);
-		
-		// Draw the cursor and the buffer onto the double buffer
-		draw_sprite(buffer, target->getImage(), target->getX(), target->getY());
-		draw_sprite(buffer, cursor->getImage(), cursor->getX(), cursor->getY());
 
 		// Draw the double buffer onto the screen
 		acquire_screen();
@@ -611,26 +674,44 @@ int main(void) {
 				displayInstructions();
 				displayDifficultySelectionScreen(letter_gothic_28, letter_gothic_24, cursor);
 				restartGame(player, cursor, target);
+				
+				// Unlock the mutex before restarting the game
+				if (pthread_mutex_unlock(&threadsafe)) {
+					textout_ex(buffer, font, "ERRR: Thread mutex unlock error", 0, 0, WHITE, 0);
+				}
 				continue;
 			}
 			else {
 				clear_bitmap(buffer);
+				//pthread_mutex_unlock(&threadsafe);
 				break;
 			}
 		}
+		if (pthread_mutex_unlock(&threadsafe)) {
+			textout_ex(buffer, font, "ERRR: Thread mutex unlock error", 0, 0, WHITE, 0);
+		}
 	}
+	if (pthread_mutex_unlock(&threadsafe)) {
+		textout_ex(buffer, font, "ERRR: Thread mutex unlock error", 0, 0, WHITE, 0);
+	}
+
+	closeThreads = true;
+	rest(100);
+	
+	// Kill the mutex
+	pthread_mutex_destroy(&threadsafe);
 	
 	// Clean up objects
 	for (int f = 0; f < MASCOTFRAMES; f++) {
 		destroy_bitmap(mascotFrames[f]);
 	}
-    //destroy_bitmap(background_image);
     destroy_bitmap(buffer);
 	delete hardlineSounds;
 	delete cursor;
 	delete target;
 	delete mascot;
 	
+	// Unload the datafile
 	unload_datafile(data);
 	allegro_exit();
 	return 0;

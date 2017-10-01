@@ -11,7 +11,7 @@ ResourceIncludes=
 MakeIncludes=
 Compiler=
 CppCompiler=
-Linker=mappyal.o_@@_../../../../../../../allegro-4.4.2-mingw-4.5.2/bin/allegro-4.4.2-md.dll_@@_
+Linker=mappyal.o_@@_../../../../../../../../allegro-4.4.2-mingw-4.5.2/bin/allegro-4.4.2-md.dll_@@_
 IsCpp=1
 Icon=
 ExeOutput=
@@ -29,7 +29,7 @@ IncludeVersionInfo=0
 SupportXPThemes=0
 CompilerSet=3
 CompilerSettings=0000000100000000000000000
-UnitCount=12
+UnitCount=13
 
 [VersionInfo]
 Major=1
@@ -162,6 +162,16 @@ BuildCmd=
 
 [Unit12]
 FileName=platform.h
+CompileCpp=1
+Folder=
+Compile=1
+Link=1
+Priority=1000
+OverrideBuildCmd=0
+BuildCmd=
+
+[Unit13]
+FileName=tothetop_dat.h
 CompileCpp=1
 Folder=
 Compile=1

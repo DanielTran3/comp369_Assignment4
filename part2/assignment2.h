@@ -1,6 +1,7 @@
 #ifndef _ASSIGNMENT2_H
 #define _ASSIGNMENT2_H 1
 
+#include <pthread.h>
 #include <allegro.h>
 #include "assignment2.h"
 #include "sprite.h"
@@ -31,7 +32,7 @@ void displayInstructions();
 void displayDifficultySelectionScreen(FONT *headerFont, FONT *selectionFont, Sprite *cursor);
 void displayHelpScreen(FONT *helpTitle, FONT *helpFont);
 void displayGameOverScreen(PlayerInfo *player);
-void displayUserInformation(PlayerInfo *player);
+void displayUserInformation(PlayerInfo *player, BITMAP *buffer);
 int getHorizontalSpacing(const char *text);
 void draw_pretty_box(const char * textToMeasure, int x, int y, int offset_x, int offset_y, int numLines);
 bool chooseToContinue();
