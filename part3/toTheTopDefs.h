@@ -13,7 +13,7 @@
 #define HEIGHT 480
 #define BOTTOM 48000
 #define MAXJUMP 1600
-#define TOP_LEVEL 1315
+#define TOP_LEVEL 1254
 
 extern int gameoverFlag;
 

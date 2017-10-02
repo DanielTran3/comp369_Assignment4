@@ -23,7 +23,7 @@ FONT *tempus_sans_itc_24;
 FONT *tempus_sans_itc_9;
 
 /*
-	Thread for blitting mappy foreground and background tiles, moving platforms,, and spikes
+	Thread for blitting mappy foreground and background tiles, moving platforms, and spikes
 */
 void *secondaryThreadLoop(void *data) {
 	while(!closeThreads) {
