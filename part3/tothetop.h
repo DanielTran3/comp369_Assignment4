@@ -4,6 +4,7 @@
 #include <pthread.h>
 #include "sprite.h"
 #include "enemyhandler.h"
+#include "intelligentenemyhandler.h"
 #include "platform.h"
 #include "toTheTopDefs.h"
 

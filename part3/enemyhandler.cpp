@@ -8,9 +8,6 @@ EnemyHandler::EnemyHandler(DATAFILE *data)
 
 EnemyHandler::~EnemyHandler(void)
 {
-    //delete the sprites
-	for (int n = 0; n < _count; n++)
-		delete _sprites[n];
 }
 
 /*
@@ -98,6 +95,7 @@ void EnemyHandler::SpawnEnemies() {
 	int platformEndingTile = 0;
 	
 	while (spawningLevel > TOP_LEVEL) {
+		
 		// Spawn an enemy randomly between 8 levels
 		spawningLevel -= rand() % 8;
 		
@@ -105,6 +103,11 @@ void EnemyHandler::SpawnEnemies() {
 		// Don't spawn above level 0. This condition in the while is present for the case where
 		// A level wasn't found and we try moving up more levels one at a time.
 		while (spawningLevel > TOP_LEVEL) {
+			// If the level is between the spawning area for the intelligent enemies, then skip ahead
+			if ((spawningLevel < 1347) && (spawningLevel > 1287)) {
+				spawningLevel = 1287;
+			
+			}
 			platformEndingTile = GetPlatform(spawningLevel);
 
 			// If no surface is found, then move up a level

@@ -43,6 +43,7 @@ class Sprite {
 		void PlayerControls(Sound *sounds);
 		void UpdateLevelReached();
 		void Walk();
+		void IntelligentWalk(Sprite *player, int walkSpeed);
 		void Move();
 		
 		int getAlive();

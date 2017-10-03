@@ -11,6 +11,7 @@ dat -a -t BMP -bpp 24 tothetop.dat backgrounds/WinBackground.bmp
 dat -a -t BMP -bpp 24 tothetop.dat mappy/player.bmp
 dat -a -t BMP -bpp 24 tothetop.dat mappy/deathSpike.bmp
 dat -a -t BMP -bpp 24 tothetop.dat mappy/enemy.bmp
+dat -a -t BMP -bpp 24 tothetop.dat mappy/intelligentEnemy.bmp
 dat -a -t BMP -bpp 24 tothetop.dat mappy/moving_platform.bmp
 
 dat -a -t SAMPLE tothetop.dat sounds/BGM_Epic.wav
@@ -20,4 +21,4 @@ dat -a -t SAMPLE tothetop.dat sounds/SFX_Jump.wav
 dat -a -t SAMPLE tothetop.dat sounds/SFX_Spikes.wav
 
 dat -c2 tothetop.dat
-dat -h defines.h tothetop.dat
+dat -h tothetop_dat.h tothetop.dat

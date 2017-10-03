@@ -243,6 +243,90 @@ void Sprite::Walk() {
 }
 
 /*
+	Method that moves a sprite left and right ontop of a tile platform.
+	Performs collision check to see if another sprite has collided with it.
+	Sprite will chase after a player if the player is on the same block level
+*/
+void Sprite::IntelligentWalk(Sprite *player, int walkSpeed) {
+	// Save old position and update sprite position
+	int oldX = _x;
+	int oldY = _y;
+	UpdatePosition();
+	// Test for collision below sprite (there must be a block below the sprite in order for
+	// it to be able to walk, and check for no collision to the left and right of the sprite to the left 
+	if (!CollideWithBlock(_x, _y + _height) || !CollideWithBlock(_x + _width - 1, _y + _height) || 
+		CollideWithBlock(_x + _width + 1, _y) || CollideWithBlock(_x - 1, _y)) {
+		_direction *= -1;
+		_x = oldX;
+		_y = oldY;
+		UpdatePosition();
+	}
+	// If the player's y is between the sprite's y and y + height, then change the current
+	// sprite's direction to move towards the player.
+	if ((player->getY() <= (_y + _height)) && (player->getY() >= _y)) {
+		// If the current walking speed is equal to walkSpeed, then apply a speed
+		// increase to the current sprite speed
+		if (_velX == walkSpeed) {
+			_velX -= 0.5 + rand() % 4;
+		}
+		// Check if moving using the current direction moves toward or away from the player
+		int distFromPlayerToSprite = abs(player->getX() - _x);
+		int distFromPlayerToSpriteMoved = abs(player->getX() - (_x + _direction * _velX));
+		if (distFromPlayerToSpriteMoved > distFromPlayerToSprite) {
+			_direction *= -1;
+			UpdatePosition();
+		}
+	}
+	// If player is above the level (jumping) but below the next level, give the current sprite
+	// a chance to jump
+//	else if (player->getY() > level) {
+//		if (_velX != walkSpeed) {
+//			_velX -= walkSpeed;
+//		}
+//	}
+	else {
+		if (_velX != walkSpeed) {
+			_velX = walkSpeed;
+		}
+	}
+	//handle jumping
+//    if (_jump == MAXJUMP)
+//    { 
+//        if (!CollideWithBlock(_x + _width / 2, _y + _height + 5))
+//            _jump = 0;
+//    }
+//    else
+//    {
+//        _y -= _jump / 3; 
+//        _jump--; 
+//    }
+//
+//	if (_jump < 0) 
+//    { 
+//        if (CollideWithBlock(_x + _width / 2, _y + _height))
+//		{
+//			_jump = MAXJUMP;
+//
+//			// After landing, fix height so there is no more collision
+//            while (CollideWithBlock(_x + _width / 2, _y + _height)) {
+//            	_y -= 1;
+//			}
+//        } 
+//    }
+	
+	if (_direction == 1) {
+		_framesStart = 5;
+        _framesEnd = 9;
+	}
+	if (_direction == -1) {
+		_framesStart = 0;
+        _framesEnd = 4;
+	}
+	UpdateAnimation();
+}
+
+
+/*
 	Method that moves a sprite and checks for collisions
 */
 void Sprite::Move() {

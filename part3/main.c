@@ -326,7 +326,7 @@ void drawHLineOfSprites(Sprite *sprite, BITMAP *dest, int xDistance, int yLocati
 void initializePlayer(Sprite *player) {
 	player->Load((BITMAP *) data[PLAYER_BMP].dat);
 	player->setX(WIDTH / 2);
-	player->setY((1200 * mapblockheight) - player->getHeight() - mapblockheight - 1);
+	player->setY((1362 * mapblockheight) - player->getHeight() - mapblockheight - 1);
 	player->setWidth(24);
 	player->setHeight(22);
 	player->setAnimColumns(11);
@@ -342,7 +342,7 @@ void initializePlayer(Sprite *player) {
 	Moving platforms in Stage 3, sky stage
 */
 Platform *initializeMovingPlatforms() {
-	int movingPlatformsStartingLevel = 1313;
+	int movingPlatformsStartingLevel = 1252;
 	int movingSpeed = 0;
 	Platform *movingPlatforms = new Platform(data);
 	while (movingPlatforms->getNumPlatforms() < NUM_PLATFORMS) {
@@ -438,9 +438,13 @@ int main(void) {
 	player = new Sprite();
 	initializePlayer(player);
 
-	// Initialize Enemies in a enemyHandler
+	// Initialize Enemies in an enemyHandler
 	EnemyHandler *enemyHandler = new EnemyHandler(data);
 	enemyHandler->SpawnEnemies();
+	
+	// Initialize Intelligent Enemies in an intelligentenemyhandler
+	IntelligentEnemyHandler *intelligentEnemyHandler = new IntelligentEnemyHandler(data);
+	intelligentEnemyHandler->SpawnIntelligentEnemies();
 
 	// Create the moving cloud platforms to be used in Stage 3
 	cloudPlatforms = initializeMovingPlatforms();
@@ -506,6 +510,12 @@ int main(void) {
 		if (enemyHandler->DrawEnemies(buffer, mapyoff, mapxoff, mapyoff, player)) {
 			gameoverFlag = 1;
 		}
+
+		// Draws Intelligent Enemy and checks for player collision with enemy
+		if (intelligentEnemyHandler->DrawIntelligentEnemies(buffer, mapyoff, mapxoff, mapyoff, player)) {
+			gameoverFlag = 1;
+		}
+
 		// Draw the player
 		player->DrawFrame(buffer, mapxoff, mapyoff);
 		
