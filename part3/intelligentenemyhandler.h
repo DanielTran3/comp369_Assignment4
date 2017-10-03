@@ -6,7 +6,7 @@
 #define MAX_ENEMIES 4800
 #define INTELLIGENT_LEVEL_START 1347
 #define INTELLIGENT_LEVEL_END 1287
-#define PLATFORM_LENGTH 4
+#define PLATFORM_LENGTH_LONG 4
 #define WALKSPEED -2
 
 class IntelligentEnemyHandler {

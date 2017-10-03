@@ -267,7 +267,7 @@ void Sprite::IntelligentWalk(Sprite *player, int walkSpeed) {
 		// If the current walking speed is equal to walkSpeed, then apply a speed
 		// increase to the current sprite speed
 		if (_velX == walkSpeed) {
-			_velX -= 0.5 + rand() % 4;
+			_velX = _randomVelX;
 		}
 		// Check if moving using the current direction moves toward or away from the player
 		int distFromPlayerToSprite = abs(player->getX() - _x);
@@ -484,6 +484,12 @@ double Sprite::getVelY() {
 }
 void Sprite::setVelY(double velY) {
 	_velY = velY;
+}
+double Sprite::getRandomVelX() {
+	return _randomVelX;
+}
+void Sprite::setRandomVelX(double randomVelX) {
+	_randomVelX = randomVelX;
 }
 BITMAP *Sprite::getImage() {
 	return _image;

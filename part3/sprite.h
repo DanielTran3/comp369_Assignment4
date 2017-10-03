@@ -21,6 +21,7 @@ class Sprite {
 				
 		double _x, _y;
 		double _velX, _velY;
+		double _randomVelX;
 
 		BITMAP *_image;
 		
@@ -94,6 +95,8 @@ class Sprite {
 		void setVelX(double velX);
 		double getVelY();
 		void setVelY(double velY);
+		double getRandomVelX();
+		void setRandomVelX(double randomVelX);
 
 		BITMAP *getImage();
 		void setImage(BITMAP *image);

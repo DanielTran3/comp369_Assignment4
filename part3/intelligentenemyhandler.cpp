@@ -30,6 +30,7 @@ void IntelligentEnemyHandler::AddIntelligentEnemy(int spawningLevel, int xTile)
 		_sprites[_count]->setYDelay(0);
 		_sprites[_count]->setVelX(WALKSPEED);
 		_sprites[_count]->setVelY(0);
+		_sprites[_count]->setRandomVelX(WALKSPEED - (1 + rand() % 4));
 		_count++;
 	}
 }
@@ -77,7 +78,7 @@ int IntelligentEnemyHandler::GetPlatform(int level) {
 			// Keep track of a tile that the enemy can spawn ontop of;
 			endingPlatformTile = i;
 			// Increase the tile count
-			if (++tileCount > PLATFORM_LENGTH) {
+			if (++tileCount > PLATFORM_LENGTH_LONG) {
 				break;
 			}
 		}
@@ -85,7 +86,7 @@ int IntelligentEnemyHandler::GetPlatform(int level) {
 			tileCount = 0;
 		}
 	}
-	return tileCount > PLATFORM_LENGTH ? endingPlatformTile : -1;
+	return tileCount > PLATFORM_LENGTH_LONG ? endingPlatformTile : -1;
 }
 
 void IntelligentEnemyHandler::SpawnIntelligentEnemies(void) {
